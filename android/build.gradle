@@ -1,19 +1,55 @@
+/**
+ * Gradle build configuration for the Biometric Authorization plugin.
+ * This file defines all the necessary configurations for building the Android component
+ * of the Flutter plugin, including dependencies, SDK versions, and build options.
+ */
+
+// Define the group ID and version for the plugin
 group = "com.maojiu.biometric_authorization"
 version = "1.0-SNAPSHOT"
 
-buildscript {
-    ext.kotlin_version = "1.8.22"
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.7.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+// Load local properties file that contains environment-specific configurations
+// such as the path to the Flutter SDK
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
     }
 }
 
+// Verify that the Flutter SDK path is defined in local.properties
+def flutterRoot = localProperties.getProperty("flutter.sdk")
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+/**
+ * Buildscript configuration section.
+ * This is where we define the Gradle plugins and repositories needed to build the project.
+ */
+buildscript {
+    // Define Kotlin version used across the project
+    ext.kotlin_version = "1.9.22"
+    ext.kotlin_ext_version = "1.5.10"
+    
+    // Define repositories to download build dependencies
+    repositories {
+        google()  // Google's Maven repository for Android specific dependencies
+        mavenCentral()  // Central repository for general Java/Kotlin libraries
+    }
+
+    // Define build dependencies needed by Gradle to compile the project
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.2.0")  // Android Gradle Plugin
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")  // Kotlin Gradle Plugin
+    }
+}
+
+/**
+ * Define repositories that will be used to resolve dependencies for all projects,
+ * including the app and the libraries it depends on.
+ */
 allprojects {
     repositories {
         google()
@@ -21,45 +57,98 @@ allprojects {
     }
 }
 
+// Apply the Android library plugin, which configures Gradle to build an Android library (.aar)
 apply plugin: "com.android.library"
+// Apply the Kotlin Android plugin for Kotlin language support
 apply plugin: "kotlin-android"
 
+/**
+ * Android specific configuration.
+ * This block defines all Android-specific build settings.
+ */
 android {
+    // Package namespace for the library
     namespace = "com.maojiu.biometric_authorization"
 
+    // Android SDK version to compile against
     compileSdk = 35
+    // NDK version to use
+    ndkVersion = "26.3.11579264"
 
+    // Enable Jetpack Compose support
+    buildFeatures {
+        compose true
+    }
+
+    // Configure Jetpack Compose compiler options
+    composeOptions {
+        kotlinCompilerVersion("$kotlin_version")
+        kotlinCompilerExtensionVersion("$kotlin_ext_version")
+    }
+
+    // Configure Java compatibility options
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    // Configure Kotlin compiler options
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11
     }
 
+    // Define source code directories
     sourceSets {
-        main.java.srcDirs += "src/main/kotlin"
-        test.java.srcDirs += "src/test/kotlin"
+        main.java.srcDirs += "src/main/kotlin"  // Main source code directory
+        test.java.srcDirs += "src/test/kotlin"  // Test source code directory
     }
 
+    // Define the minimum SDK version required to run the library
     defaultConfig {
-        minSdk = 21
+        minSdk = 21  // Android 5.0 (Lollipop) and above
     }
 
+    /**
+     * Dependencies section.
+     * This is where we define external libraries that our plugin depends on.
+     */
     dependencies {
-        testImplementation("org.jetbrains.kotlin:kotlin-test")
-        testImplementation("org.mockito:mockito-core:5.0.0")
+        // Jetpack Compose dependencies
+        implementation(platform("androidx.compose:compose-bom:2024.06.00"))  // Compose Bill of Materials
+        implementation("androidx.compose.ui:ui")  // Compose UI core
+        implementation("androidx.compose.ui:ui-tooling-preview")  // Compose UI tooling preview
+        implementation("androidx.compose.material3:material3")  // Material 3 design system
+        implementation("androidx.activity:activity-compose:1.10.1")  // Activity with Compose support
+        implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")  // ViewModel for Compose
+        
+        // Biometric authentication dependency
+        implementation("androidx.biometric:biometric:1.1.0")  // Android Biometric API
+        
+        // Material design components
+        implementation("com.google.android.material:material:1.12.0")
+
+        // Testing dependencies
+        testImplementation("org.jetbrains.kotlin:kotlin-test")  // Kotlin test utilities
+        testImplementation("org.mockito:mockito-core:5.0.0")  // Mockito for mocking in tests
+
+        // Flutter dependencies (currently commented out)
+//        compileOnly files("$flutterRoot/bin/cache/artifacts/engine/android-arm-release/flutter.jar")
+//        compileOnly("androidx.annotation:annotation:1.9.1")
     }
 
+    /**
+     * Test configuration options.
+     * This block configures how tests are executed and how results are reported.
+     */
     testOptions {
         unitTests.all {
-            useJUnitPlatform()
+            useJUnitPlatform()  // Use JUnit 5 platform for running tests
 
+            // Configure test logging
             testLogging {
-               events "passed", "skipped", "failed", "standardOut", "standardError"
-               outputs.upToDateWhen {false}
-               showStandardStreams = true
+               events "passed", "skipped", "failed", "standardOut", "standardError"  // Log test events
+               outputs.upToDateWhen {false}  // Always run tests
+               showStandardStreams = true  // Show standard output and error streams
             }
         }
     }

@@ -1,10 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permission required for biometric authentication (fingerprint, face recognition, etc.) -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Permission required for network operations -->
+    <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- Main application configuration -->
     <application
         android:label="biometric_authorization_example"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
+        <!-- enableOnBackInvokedCallback enables the new predictive back gesture navigation for Android 13+ devices -->
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

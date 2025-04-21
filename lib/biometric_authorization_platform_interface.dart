@@ -50,11 +50,12 @@ abstract class BiometricAuthorizationPlatform extends PlatformInterface {
 
   /// Authenticate with biometric.
   Future<bool> authenticate({
-    required BiometricType biometricType,
+    BiometricType biometricType = BiometricType.none,
     String reason = "Authenticate",
     String? title,
     String? confirmText,
     bool useCustomUI = false,
+    String? cancelText,
   }) async {
     throw UnimplementedError('authenticate() has not been implemented.');
   }

@@ -1,5 +1,6 @@
 package com.maojiu.biometric_authorization_example
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// Use FlutterFragmentActivity instead of FlutterActivity
+class MainActivity : FlutterFragmentActivity()

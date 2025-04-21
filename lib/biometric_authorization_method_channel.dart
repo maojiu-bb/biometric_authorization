@@ -50,7 +50,7 @@ class MethodChannelBiometricAuthorization
       return [];
     }
 
-    // 将字符串列表转换为BiometricType枚举列表
+    // Convert the string list to a BiometricType enum list
     return result.map<BiometricType>((item) {
       final String type = item.toString();
       switch (type) {
@@ -65,28 +65,50 @@ class MethodChannelBiometricAuthorization
     }).toList();
   }
 
-  /// Authenticate with biometric.
+  /// Initiates biometric authentication using the device's biometric sensors.
   ///
-  /// [biometricType] is the type of biometric to authenticate with.
-  /// [reason] is the reason for the authentication.
-  /// [title] is the title of the authentication dialog.
-  /// [confirmText] is the text of the confirm button in the authentication dialog.
-  /// [useCustomUI] if true, will use the custom SwiftUI view for authentication on iOS.
+  /// This method triggers the biometric authentication flow, which can use fingerprint,
+  /// face recognition, or other biometric methods available on the device.
+  ///
+  /// Parameters:
+  /// - [biometricType]: Specifies the type of biometric authentication to use.
+  ///   Required on iOS, optional on Android (Android will automatically use available methods).
+  ///   Defaults to [BiometricType.none].
+  /// - [reason]: The reason for requesting authentication, displayed to the user.
+  ///   Defaults to "Authenticate".
+  /// - [title]: The title of the authentication dialog. If null, a default title will be used.
+  /// - [confirmText]: The text for the confirmation button in the authentication dialog.
+  ///   If null, a default text will be used.
+  /// - [useCustomUI]: Whether to use a custom UI for authentication (true) or the system default UI (false).
+  ///   Defaults to false.
+  /// - [cancelText]: The text for the cancel button in the authentication dialog.
+  ///   Only used on Android. If null, a default text ("Cancel") will be used.
+  ///
+  /// Returns a [Future<bool>] that completes with:
+  /// - true: If authentication was successful
+  /// - false: If authentication failed or was canceled by the user
   @override
   Future<bool> authenticate({
-    required BiometricType biometricType,
+    BiometricType biometricType = BiometricType.none,
     String reason = "Authenticate",
     String? title,
     String? confirmText,
     bool useCustomUI = false,
+    String? cancelText,
   }) async {
-    final result = await methodChannel.invokeMethod<bool>('authenticate', {
+    final Map<String, dynamic> arguments = {
       'biometricType': biometricType.name,
       'reason': reason,
       'title': title,
       'confirmText': confirmText,
       'useCustomUI': useCustomUI,
-    });
+      'cancelText': cancelText,
+    };
+
+    final result = await methodChannel.invokeMethod<bool>(
+      'authenticate',
+      arguments,
+    );
     return result ?? false;
   }
 }

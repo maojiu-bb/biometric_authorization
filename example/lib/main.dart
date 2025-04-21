@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -22,6 +24,7 @@ class _MyAppState extends State<MyApp> {
   bool _isBiometricEnrolled = false;
   List<BiometricType> _availableBiometricTypes = [];
   bool _isAuthenticated = false;
+  bool _isDarkMode = false;
   final _biometricAuthorizationPlugin = BiometricAuthorization();
 
   @override
@@ -30,7 +33,12 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
+  void _toggleTheme() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+  }
+
   Future<void> initPlatformState() async {
     String platformVersion;
     bool isBiometricAvailable;
@@ -80,31 +88,32 @@ class _MyAppState extends State<MyApp> {
         title: 'Biometric Authentication',
         confirmText: 'Authenticate',
         useCustomUI: useCustomUI,
+        cancelText: Platform.isAndroid ? 'Cancel' : null,
       );
 
       setState(() {
         _isAuthenticated = result;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result ? 'Authentication successful' : 'Authentication failed',
-          ),
-          backgroundColor: result ? Colors.green : Colors.red,
-        ),
-      );
     } on PlatformException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+      debugPrint("Error: ${e.message}");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Biometric Authorization Example'),
@@ -152,62 +161,70 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
               ),
-              Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Authentication Status',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              _isAuthenticated
-                                  ? Colors.green.shade100
-                                  : Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+              Row(
+                children: [
+                  Expanded(
+                    child: Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              _isAuthenticated
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              color:
-                                  _isAuthenticated ? Colors.green : Colors.red,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isAuthenticated
-                                  ? 'Authenticated'
-                                  : 'Not Authenticated',
+                            const Text(
+                              'Authentication Status',
                               style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
                                 color:
                                     _isAuthenticated
-                                        ? Colors.green.shade900
-                                        : Colors.red.shade900,
-                                fontWeight: FontWeight.bold,
+                                        ? Colors.green.shade100
+                                        : Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isAuthenticated
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
+                                    color:
+                                        _isAuthenticated
+                                            ? Colors.green
+                                            : Colors.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _isAuthenticated
+                                        ? 'Authenticated'
+                                        : 'Not Authenticated',
+                                    style: TextStyle(
+                                      color:
+                                          _isAuthenticated
+                                              ? Colors.green.shade900
+                                              : Colors.red.shade900,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 16),
               const Text(
@@ -249,16 +266,30 @@ class _MyAppState extends State<MyApp> {
                 ],
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: initPlatformState,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh Status'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: initPlatformState,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh Status'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _toggleTheme,
+          tooltip: '切换主题',
+          child: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
         ),
       ),
     );
@@ -279,7 +310,12 @@ class InfoRow extends StatelessWidget {
         children: [
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.black87)),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
           ),
         ],
       ),
