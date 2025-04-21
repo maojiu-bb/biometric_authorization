@@ -1,7 +1,10 @@
 name: biometric_authorization
-description: "A new Flutter project."
-version: 0.0.1
-homepage:
+description: 'A Flutter plugin for biometric authentication on Android and iOS. Supports fingerprint, Face ID, Touch ID with both system and custom UI options.'
+version: 0.1.0
+homepage: https://github.com/maojiu-bb/biometric_authorization
+repository: https://github.com/maojiu-bb/biometric_authorization
+issue_tracker: https://github.com/maojiu-bb/biometric_authorization/issues
+documentation: https://github.com/maojiu-bb/biometric_authorization/blob/main/README.md
 
 environment:
   sdk: ^3.7.2
@@ -39,8 +42,8 @@ flutter:
         pluginClass: BiometricAuthorizationPlugin
       ios:
         pluginClass: BiometricAuthorizationPlugin
-      macos:
-        pluginClass: BiometricAuthorizationPlugin
+      # macos:
+      #   pluginClass: BiometricAuthorizationPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
