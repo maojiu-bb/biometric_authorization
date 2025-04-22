@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Change Swift package file
+
 ## 0.1.2
 
 - Added Swift package file
