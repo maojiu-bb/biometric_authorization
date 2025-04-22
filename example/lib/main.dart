@@ -72,7 +72,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> _authenticate({required bool useCustomUI}) async {
+  Future<void> _authenticate({
+    required bool useCustomUI,
+    bool useDialog = false,
+  }) async {
     if (_availableBiometricTypes.isEmpty ||
         _availableBiometricTypes.first == BiometricType.none) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +90,7 @@ class _MyAppState extends State<MyApp> {
         reason: 'Please authenticate to continue',
         title: 'Biometric Authentication',
         confirmText: 'Authenticate',
-        useDialogUI: true,
+        useDialogUI: useDialog,
         useCustomUI: useCustomUI,
         cancelText: Platform.isAndroid ? 'Cancel' : null,
       );
@@ -257,6 +260,46 @@ class _MyAppState extends State<MyApp> {
                               : null,
                       icon: const Icon(Icons.face),
                       label: const Text('Custom UI'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          _isBiometricAvailable && _isBiometricEnrolled
+                              ? () => _authenticate(
+                                useCustomUI: false,
+                                useDialog: true,
+                              )
+                              : null,
+                      icon: const Icon(Icons.fingerprint),
+                      label: const Text('Dialog UI'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          _isBiometricAvailable && _isBiometricEnrolled
+                              ? () => _authenticate(
+                                useCustomUI: true,
+                                useDialog: true,
+                              )
+                              : null,
+                      icon: const Icon(Icons.face),
+                      label: const Text('Dialog UI'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         backgroundColor: Colors.indigo,
