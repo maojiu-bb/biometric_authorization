@@ -1,6 +1,6 @@
 name: biometric_authorization
 description: 'A Flutter plugin for biometric authentication on Android and iOS. Supports fingerprint, Face ID, Touch ID with both system and custom UI options.'
-version: 0.1.1
+version: 0.1.2
 homepage: https://github.com/maojiu-bb/biometric_authorization
 repository: https://github.com/maojiu-bb/biometric_authorization
 issue_tracker: https://github.com/maojiu-bb/biometric_authorization/issues
