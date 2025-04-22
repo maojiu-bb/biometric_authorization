@@ -42,7 +42,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  biometric_authorization: ^0.1.0
+  biometric_authorization: ^1.0.0
 ```
 
 Then run:
