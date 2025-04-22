@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0
+
+- Stable release incorporating features and fixes from previous versions.
+- Finalized API for biometric availability checks, enrollment status, and authentication.
+- Includes support for system default UI, custom bottom sheet UI (Android), and dialog-based authentication (Android).
+- Supports Fingerprint on Android, and Face ID/Touch ID on iOS.
+- Added Swift Package Manager support for iOS.
+- Improved error handling and feedback mechanisms, including specific lockout errors.
+- General stability improvements and bug fixes.
+
 ## 0.1.4
 
 -
