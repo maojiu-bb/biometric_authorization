@@ -126,7 +126,7 @@ try {
 }
 ```
 
-#### Using Custom UI (Available on Android)
+#### Using Custom UI
 
 ```dart
 bool authenticated = await biometricAuth.authenticate(
@@ -134,6 +134,17 @@ bool authenticated = await biometricAuth.authenticate(
   title: 'Biometric Authentication',
   confirmText: 'Verify',
   useCustomUI: true,
+);
+```
+
+#### Using Dialog UI (Available in Android)
+
+```dart
+bool authenticated = await biometricAuth.authenticate(
+  reason: 'Please authenticate to access your account',
+  title: 'Biometric Authentication',
+  confirmText: 'Verify',
+  useDialog: true
 );
 ```
 
