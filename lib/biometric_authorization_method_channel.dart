@@ -81,6 +81,8 @@ class MethodChannelBiometricAuthorization
   ///   If null, a default text will be used.
   /// - [useCustomUI]: Whether to use a custom UI for authentication (true) or the system default UI (false).
   ///   Defaults to false.
+  /// - [useDialogUI]: Whether to use the Dialog UI for authentication (true) or the new UI (false) in Android.
+  ///   Defaults to false.
   /// - [cancelText]: The text for the cancel button in the authentication dialog.
   ///   Only used on Android. If null, a default text ("Cancel") will be used.
   ///
@@ -94,6 +96,7 @@ class MethodChannelBiometricAuthorization
     String? title,
     String? confirmText,
     bool useCustomUI = false,
+    bool useDialogUI = false,
     String? cancelText,
   }) async {
     final Map<String, dynamic> arguments = {
@@ -102,6 +105,7 @@ class MethodChannelBiometricAuthorization
       'title': title,
       'confirmText': confirmText,
       'useCustomUI': useCustomUI,
+      'useDialogUI': useDialogUI,
       'cancelText': cancelText,
     };
 

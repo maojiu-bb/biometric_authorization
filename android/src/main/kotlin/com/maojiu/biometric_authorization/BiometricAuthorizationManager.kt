@@ -5,8 +5,11 @@
  * This class handles biometric availability checks, enrollment status, and authentication processes.
  * It supports both standard system UI and custom bottom sheet UI for biometric authentication.
  */
+@file:Suppress("DEPRECATION")
+
 package com.maojiu.biometric_authorization
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.biometric.BiometricManager
 import android.content.pm.PackageManager
@@ -15,7 +18,17 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel.Result
 import androidx.core.content.ContextCompat
 import androidx.biometric.BiometricPrompt
+import androidx.core.hardware.fingerprint.FingerprintManagerCompat
 import androidx.fragment.app.FragmentActivity
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import android.util.Log
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import androidx.fragment.app.DialogFragment
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Enum class representing the supported biometric authentication types.
@@ -29,6 +42,17 @@ enum class BiometricType(val rawValue: String) {
 }
 
 /**
+ * Constants for fingerprint error codes from FingerprintManager
+ * These are not available in FingerprintManagerCompat but are needed for error handling
+ */
+object FingerprintConstants {
+    const val FINGERPRINT_ERROR_CANCELED = 5
+    const val FINGERPRINT_ERROR_USER_CANCELED = 10
+    const val FINGERPRINT_ERROR_LOCKOUT = 7
+    const val FINGERPRINT_ERROR_LOCKOUT_PERMANENT = 9
+}
+
+/**
  * Manager class that handles all biometric authentication operations.
  *
  * This class provides methods to check biometric availability, enrollment status,
@@ -37,11 +61,19 @@ enum class BiometricType(val rawValue: String) {
  * @param context The application context
  * @param activity The current activity, needed for UI operations
  */
+@Suppress("DEPRECATION")
 class BiometricAuthorizationManager(
     private val context: Context,
     private val activity: FragmentActivity
 ) {
+    /**
+     * use biometricManager to used new UI for biometric authentication
+     * use fingerprintManager to used deprecated UI for fingerprint authentication 
+     */
     private val biometricManager = BiometricManager.from(context)
+    @SuppressLint("RestrictedApi")
+    private val fingerprintManager = FingerprintManagerCompat.from(context)
+
     private val packageManager: PackageManager = context.packageManager
 
     private lateinit var biometricPrompt: BiometricPrompt
@@ -127,6 +159,7 @@ class BiometricAuthorizationManager(
         val title = args["title"] as? String ?: "Biometric Authentication"
         val confirmText = args["confirmText"] as? String ?: "Authenticate"
         val useCustomUI = args["useCustomUI"] as? Boolean ?: false
+        val useDialogUI = args["useDialogUI"] as? Boolean ?: false
         val cancelText = args["cancelText"] as? String ?: "Cancel"
 
         try {
@@ -162,7 +195,12 @@ class BiometricAuthorizationManager(
                     // Show custom bottom sheet UI
                     BiometricAuthBottomSheet(title, confirmText) {
                         try {
-                            biometricPrompt.authenticate(promptInfo)
+                            // Set up biometric authentication with dialog UI
+                            if (useDialogUI) {
+                                startFingerprintAuth(result, title, cancelText)
+                            } else {
+                                startBiometricAuth()
+                            }
                         } catch (e: Exception) {
                             result.error("BIOMETRIC_ERROR", e.message, null)
                         }
@@ -172,6 +210,12 @@ class BiometricAuthorizationManager(
                 }
             } else {
                 try {
+                    // Set up biometric authentication with dialog UI
+                    if (useDialogUI) {
+                        startFingerprintAuth(result, title, cancelText)
+                        return
+                    }
+
                     // Set up biometric authentication with standard system UI
                     setupBiometricAuth(title, reason, cancelText, activity) { success ->
                         try {
@@ -188,6 +232,224 @@ class BiometricAuthorizationManager(
             }
         } catch (e: Exception) {
             result.error("UNEXPECTED_ERROR", "Error during biometric authentication: ${e.message}", null)
+        }
+    }
+
+    /**
+     * Starts the fingerprint authentication process used with the deprecated UI.
+     *
+     * This method is used when the useDeprecatedUI parameter is set to true.
+     *
+     * Android 10 and above only support fingerprint authentication.
+     * 
+     * @param result The result callback to send the authentication result back to Flutter
+     */
+    @SuppressLint("RestrictedApi", "MissingPermission")
+    private fun startFingerprintAuth(result: Result, title: String, cancelText: String) {
+        // Flag to ensure result is called only once
+        val resultSent = AtomicBoolean(false)
+
+        // Wrapper for result callback to prevent multiple calls
+        val safeResult = object {
+            fun success(value: Any?) {
+                if (resultSent.compareAndSet(false, true)) {
+                    activity.runOnUiThread {
+                        try { result.success(value) } catch (e: Exception) { Log.w("BiometricAuth", "Result success error: ${e.message}") }
+                    }
+                }
+            }
+            fun error(code: String, message: String?, details: Any?) {
+                if (resultSent.compareAndSet(false, true)) {
+                    activity.runOnUiThread {
+                        try { result.error(code, message, details) } catch (e: Exception) { Log.w("BiometricAuth", "Result error error: ${e.message}") }
+                    }
+                }
+            }
+        }
+
+        // Check if the device supports fingerprint authentication
+        if (!fingerprintManager.isHardwareDetected) {
+            Log.d("BiometricAuth", "Device does not support fingerprint authentication")
+            safeResult.error(
+                "FINGERPRINT_UNAVAILABLE",
+                "Device does not support fingerprint authentication",
+                null
+            )
+            return
+        }
+
+        // Check if there are any enrolled fingerprints
+        if (!fingerprintManager.hasEnrolledFingerprints()) {
+            Log.d("BiometricAuth", "No fingerprints are enrolled on this device")
+            safeResult.error(
+                "FINGERPRINT_NOT_ENROLLED",
+                "No fingerprints are enrolled on this device",
+                null
+            )
+            return
+        }
+
+        // Create a crypto object as an authentication token
+        val cryptoObject = createCryptoObject()
+        if (cryptoObject == null) {
+            Log.d("BiometricAuth", "Failed to create CryptoObject")
+            safeResult.error(
+                "FINGERPRINT_CRYPTO_ERROR",
+                "Failed to create cryptographic object for fingerprint authentication",
+                null
+            )
+            return
+        }
+
+        // Create a cancellation signal for the authentication
+        val cancellationSignal = androidx.core.os.CancellationSignal()
+
+        // Create authentication callback
+        val callback = object : FingerprintManagerCompat.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(authResult: FingerprintManagerCompat.AuthenticationResult) {
+                // Authentication succeeded
+                Log.d("BiometricAuth", "Fingerprint authentication succeeded")
+                // Dismiss the dialog if it's still showing
+                activity.supportFragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
+                    (it as? DialogFragment)?.dismissAllowingStateLoss()
+                }
+                safeResult.success(true)
+            }
+
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                // Authentication error
+                Log.d("BiometricAuth", "Fingerprint authentication error: $errString ($errorCode)")
+                // Dismiss the dialog if it's still showing
+                activity.supportFragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
+                    (it as? DialogFragment)?.dismissAllowingStateLoss()
+                }
+                when (errorCode) {
+                    FingerprintConstants.FINGERPRINT_ERROR_CANCELED,
+                    FingerprintConstants.FINGERPRINT_ERROR_USER_CANCELED -> {
+                        // User canceled authentication via system prompt or custom dialog cancel
+                        safeResult.success(false)
+                    }
+                    FingerprintConstants.FINGERPRINT_ERROR_LOCKOUT,
+                    FingerprintConstants.FINGERPRINT_ERROR_LOCKOUT_PERMANENT -> {
+                        // Device is locked out
+                        safeResult.success(false) // Reporting false, could be a specific error too
+                    }
+                    else -> {
+                        // Other errors
+                        safeResult.error(
+                            "FINGERPRINT_ERROR",
+                            errString.toString(),
+                            errorCode // Include error code in details
+                        )
+                    }
+                }
+            }
+
+            override fun onAuthenticationFailed() {
+                // Authentication failed but can be retried
+                Log.d("BiometricAuth", "Fingerprint authentication failed but can be retried")
+            }
+        }
+
+        /**
+         * Start fingerprint authentication
+         *
+         * Parameters:
+         * @param crypto: the crypto object
+         * @param flags: optional flags, usually 0  
+         * @param cancel: a cancellation signal object to cancel the authentication
+         * @param callback: the callback that receives authentication results
+         * @param handler: handler for delivering messages, or null for default handler
+         */
+        fingerprintManager.authenticate(
+            cryptoObject,
+            0,
+            cancellationSignal,
+            callback,
+            null
+        )
+
+        // --- Display the Custom Dialog --- 
+        val fragmentManager = activity.supportFragmentManager
+        // Ensure previous dialog is dismissed if any (e.g., rapid calls)
+        fragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
+            (it as? DialogFragment)?.dismissAllowingStateLoss()
+        }
+        val dialogFragment = FingerprintDialogFragment.newInstance(title, cancelText) {
+            // onCancel lambda from custom dialog
+            Log.d("BiometricAuth", "Custom dialog cancelled by user.")
+            if (!cancellationSignal.isCanceled) {
+                 // IMPORTANT: Calling cancel here will trigger the onAuthenticationError callback
+                 // with FINGERPRINT_ERROR_CANCELED. The callback will handle sending the result.
+                cancellationSignal.cancel()
+            }
+        }
+        // Show the dialog. It will appear over the activity while the fingerprint manager attempts auth.
+        dialogFragment.show(fragmentManager, "FingerprintDialogFragment")
+    }
+
+    /**
+     * Creates a cryptographic object for fingerprint authentication
+     * 
+     * @return Crypto object, or null if creation fails
+     */
+    @SuppressLint("RestrictedApi")
+    private fun createCryptoObject(): FingerprintManagerCompat.CryptoObject? {
+        // Early return for devices below Marshmallow
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            Log.e("BiometricAuth", "Fingerprint authentication requires Android 6.0 or above")
+            return null
+        }
+        
+        try {
+            // Create and get Android KeyStore instance
+            val keyStore = KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+            
+            // Key alias
+            val keyName = "com.maojiu.biometric_authorization.key"
+            
+            // Check if the key already exists, create it if not
+            if (!keyStore.containsAlias(keyName)) {
+                val keyGenerator = KeyGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES, 
+                    "AndroidKeyStore"
+                )
+                
+                val builder = KeyGenParameterSpec.Builder(
+                    keyName,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+                    .setUserAuthenticationRequired(true)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                
+                // Set authentication validity period if API level supports it
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    builder.setInvalidatedByBiometricEnrollment(true)
+                }
+                
+                keyGenerator.init(builder.build())
+                keyGenerator.generateKey()
+            }
+            
+            // Get the key and initialize Cipher
+            val key = keyStore.getKey(keyName, null) as SecretKey
+            val cipher = Cipher.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES + "/" +
+                KeyProperties.BLOCK_MODE_CBC + "/" +
+                KeyProperties.ENCRYPTION_PADDING_PKCS7
+            )
+            
+            // Initialize the Cipher for encryption mode
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+            
+            // Create and return CryptoObject
+            return FingerprintManagerCompat.CryptoObject(cipher)
+        } catch (e: Exception) {
+            // Log the error but don't throw an exception, return null to indicate crypto object creation failed
+            Log.e("BiometricAuth", "Failed to create CryptoObject: ${e.message}", e)
+            return null
         }
     }
 

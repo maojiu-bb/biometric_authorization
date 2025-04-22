@@ -25,9 +25,9 @@ A Flutter plugin that provides easy-to-use biometric authentication for both And
 
 ### Android Authentication
 
-|                                                              Default UI                                                              |                                                             Custom UI                                                              |
-| :----------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------: |
-| ![Android Default UI](https://github.com/maojiu-bb/biometric_authorization/blob/main/screenshots/android-default-sheet.png?raw=true) | ![Android Custom UI](https://github.com/maojiu-bb/biometric_authorization/blob/main/screenshots/android-custom-sheet.png?raw=true) |
+|                                                              Default UI                                                              |                                                             Custom UI (Sheet)                                                              |                                                              Custom UI (Dialog)                                                              |
+| :----------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------: |
+| ![Android Default UI](https://github.com/maojiu-bb/biometric_authorization/blob/main/screenshots/android-default-sheet.png?raw=true) | ![Android Custom UI (Sheet)](https://github.com/maojiu-bb/biometric_authorization/blob/main/screenshots/android-custom-sheet.png?raw=true) | ![Android Custom UI (Dialog)](https://github.com/maojiu-bb/biometric_authorization/blob/main/screenshots/android-custom-dialog.png?raw=true) |
 
 ## Platform Support
 

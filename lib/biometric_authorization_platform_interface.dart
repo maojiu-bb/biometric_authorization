@@ -55,6 +55,7 @@ abstract class BiometricAuthorizationPlatform extends PlatformInterface {
     String? title,
     String? confirmText,
     bool useCustomUI = false,
+    bool useDialogUI = false,
     String? cancelText,
   }) async {
     throw UnimplementedError('authenticate() has not been implemented.');

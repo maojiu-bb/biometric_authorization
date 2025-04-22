@@ -49,6 +49,7 @@ class BiometricAuthorization {
     String? title,
     String? confirmText,
     bool useCustomUI = false,
+    bool useDialogUI = false,
     String? cancelText,
   }) {
     return BiometricAuthorizationPlatform.instance.authenticate(
@@ -57,6 +58,7 @@ class BiometricAuthorization {
       title: title,
       confirmText: confirmText,
       useCustomUI: useCustomUI,
+      useDialogUI: useDialogUI,
       cancelText: cancelText,
     );
   }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Added dialog authentication mode for Android
+
 ## 0.1.0 - Initial Release
 
 - Implemented biometric authentication for Android and iOS platforms
