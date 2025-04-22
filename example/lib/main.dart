@@ -87,6 +87,7 @@ class _MyAppState extends State<MyApp> {
         reason: 'Please authenticate to continue',
         title: 'Biometric Authentication',
         confirmText: 'Authenticate',
+        useDialogUI: true,
         useCustomUI: useCustomUI,
         cancelText: Platform.isAndroid ? 'Cancel' : null,
       );
