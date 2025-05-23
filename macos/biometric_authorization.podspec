@@ -5,11 +5,13 @@
 Pod::Spec.new do |s|
   s.name             = 'biometric_authorization'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter project.'
+  s.summary          = 'A Flutter plugin for biometric authentication on macOS with Touch ID support.'
   s.description      = <<-DESC
-A new Flutter project.
+A Flutter plugin that provides biometric authentication functionality for macOS applications.
+Supports Touch ID authentication with both system and custom UI options.
+Features include availability checking, enrollment status, and secure authentication flows.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/your-repo/biometric_authorization'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
 
@@ -24,7 +26,11 @@ A new Flutter project.
 
   s.dependency 'FlutterMacOS'
 
-  s.platform = :osx, '10.11'
+  # Minimum macOS version required for LocalAuthentication and SwiftUI support
+  s.platform = :osx, '10.15'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.swift_version = '5.0'
+  
+  # Specify required frameworks
+  s.frameworks = 'LocalAuthentication', 'SwiftUI'
 end

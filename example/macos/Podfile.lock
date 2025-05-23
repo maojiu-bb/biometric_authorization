@@ -1,0 +1,22 @@
+PODS:
+  - biometric_authorization (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - biometric_authorization (from `Flutter/ephemeral/.symlinks/plugins/biometric_authorization/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  biometric_authorization:
+    :path: Flutter/ephemeral/.symlinks/plugins/biometric_authorization/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  biometric_authorization: f384a21f2bd2638f1bcdd0d9ab7da8d9f6f7f994
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+
+PODFILE CHECKSUM: 346bfb2deb41d4a6ebd6f6799f92188bde2d246f
+
+COCOAPODS: 1.16.2
