@@ -2,7 +2,7 @@
 
 ## 1.1.1
 
-- Lowered the minimum Flutter version to 3.0.0
+- Lowered the minimum Flutter version to 3.10.0 and Dart version to 3.0.0
 
 ## 1.1.0 - macOS Support
 
