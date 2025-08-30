@@ -1,4 +1,4 @@
-name: Publish to pub.dev
+name: Create Release
 
 # Trigger the workflow when a new tag is pushed
 on:
@@ -7,37 +7,15 @@ on:
       - 'v*' # Trigger on version tags like v1.0.0
 
 jobs:
-  # Job to publish the package to pub.dev and create release
-  publish:
-    name: Publish and Release
+  # Job to create GitHub release
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
 
     steps:
       # Checkout the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # Setup Flutter environment
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.10.0' # Minimum version that supports Dart SDK 3.0+
-          channel: 'stable'
-          cache: true
-
-      # Get dependencies
-      - name: Get dependencies
-        run: flutter pub get
-
-      # Setup pub.dev credentials
-      - name: Setup pub credentials
-        run: |
-          mkdir -p ~/.config/dart
-          echo '${{ secrets.PUB_DEV_CREDENTIALS }}' | base64 -d > ~/.config/dart/pub-credentials.json
-
-      # Publish to pub.dev
-      - name: Publish package
-        run: dart pub publish --force
 
       # Create GitHub release
       - name: Create GitHub Release
