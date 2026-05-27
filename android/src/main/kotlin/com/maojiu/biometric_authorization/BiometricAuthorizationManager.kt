@@ -78,6 +78,7 @@ class BiometricAuthorizationManager(
 
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
+    private var fingerprintCancellationSignal: androidx.core.os.CancellationSignal? = null
 
     /**
      * Checks if biometric authentication is available on the device.
@@ -236,6 +237,43 @@ class BiometricAuthorizationManager(
     }
 
     /**
+     * Cancels the currently running biometric authentication flow, if any.
+     *
+     * @return true when a prompt, fingerprint scan, or custom auth UI was asked to stop.
+     */
+    fun stopAuth(): Boolean {
+        var stopped = false
+
+        if (::biometricPrompt.isInitialized) {
+            try {
+                biometricPrompt.cancelAuthentication()
+                stopped = true
+            } catch (e: Exception) {
+                Log.w("BiometricAuth", "Failed to cancel biometric prompt: ${e.message}")
+            }
+        }
+
+        fingerprintCancellationSignal?.let { signal ->
+            if (!signal.isCanceled) {
+                signal.cancel()
+                stopped = true
+            }
+            fingerprintCancellationSignal = null
+        }
+
+        activity.supportFragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
+            (it as? DialogFragment)?.dismissAllowingStateLoss()
+            stopped = true
+        }
+        activity.supportFragmentManager.findFragmentByTag("biometric_auth_bottom_sheet")?.let {
+            (it as? DialogFragment)?.dismissAllowingStateLoss()
+            stopped = true
+        }
+
+        return stopped
+    }
+
+    /**
      * Starts the fingerprint authentication process used with the deprecated UI.
      *
      * This method is used when the useDeprecatedUI parameter is set to true.
@@ -303,6 +341,7 @@ class BiometricAuthorizationManager(
 
         // Create a cancellation signal for the authentication
         val cancellationSignal = androidx.core.os.CancellationSignal()
+        fingerprintCancellationSignal = cancellationSignal
 
         // Create authentication callback
         val callback = object : FingerprintManagerCompat.AuthenticationCallback() {
@@ -313,6 +352,7 @@ class BiometricAuthorizationManager(
                 activity.supportFragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
                     (it as? DialogFragment)?.dismissAllowingStateLoss()
                 }
+                fingerprintCancellationSignal = null
                 safeResult.success(true)
             }
 
@@ -323,6 +363,7 @@ class BiometricAuthorizationManager(
                 activity.supportFragmentManager.findFragmentByTag("FingerprintDialogFragment")?.let {
                     (it as? DialogFragment)?.dismissAllowingStateLoss()
                 }
+                fingerprintCancellationSignal = null
                 when (errorCode) {
                     FingerprintConstants.FINGERPRINT_ERROR_CANCELED,
                     FingerprintConstants.FINGERPRINT_ERROR_USER_CANCELED -> {

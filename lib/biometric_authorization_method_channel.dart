@@ -115,4 +115,10 @@ class MethodChannelBiometricAuthorization
     );
     return result ?? false;
   }
+
+  @override
+  Future<bool> stopAuth() async {
+    final result = await methodChannel.invokeMethod<bool>('stopAuth');
+    return result ?? false;
+  }
 }

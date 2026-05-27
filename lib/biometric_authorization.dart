@@ -62,4 +62,9 @@ class BiometricAuthorization {
       cancelText: cancelText,
     );
   }
+
+  /// Stops any biometric authentication currently in progress.
+  Future<bool> stopAuth() {
+    return BiometricAuthorizationPlatform.instance.stopAuth();
+  }
 }

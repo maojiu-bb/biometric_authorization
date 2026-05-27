@@ -30,8 +30,7 @@ if (flutterRoot == null) {
  */
 buildscript {
     // Define Kotlin version used across the project
-    ext.kotlin_version = "1.9.22"
-    ext.kotlin_ext_version = "1.5.10"
+    ext.kotlin_version = "2.0.0"
     
     // Define repositories to download build dependencies
     repositories {
@@ -43,6 +42,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:8.2.0")  // Android Gradle Plugin
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")  // Kotlin Gradle Plugin
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version")
     }
 }
 
@@ -61,6 +61,7 @@ allprojects {
 apply plugin: "com.android.library"
 // Apply the Kotlin Android plugin for Kotlin language support
 apply plugin: "kotlin-android"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
 
 /**
  * Android specific configuration.
@@ -78,12 +79,6 @@ android {
     // Enable Jetpack Compose support
     buildFeatures {
         compose true
-    }
-
-    // Configure Jetpack Compose compiler options
-    composeOptions {
-        kotlinCompilerVersion("$kotlin_version")
-        kotlinCompilerExtensionVersion("$kotlin_ext_version")
     }
 
     // Configure Java compatibility options

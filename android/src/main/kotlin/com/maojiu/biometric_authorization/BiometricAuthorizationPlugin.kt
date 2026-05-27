@@ -43,6 +43,7 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
    * Current activity, needed for UI operations like showing biometric prompts
    */
   private var activity: FragmentActivity? = null
+  private var biometricAuthorizationManager: BiometricAuthorizationManager? = null
 
   /**
    * Called when the plugin is attached to the Flutter engine.
@@ -66,6 +67,9 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
    */
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
     activity = binding.activity as? FragmentActivity
+    activity?.let {
+      biometricAuthorizationManager = BiometricAuthorizationManager(context, it)
+    }
   }
 
   /**
@@ -74,6 +78,8 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
    * Clears the stored activity reference.
    */
   override fun onDetachedFromActivityForConfigChanges() {
+    biometricAuthorizationManager?.stopAuth()
+    biometricAuthorizationManager = null
     activity = null
   }
 
@@ -86,6 +92,9 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
    */
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
     activity = binding.activity as? FragmentActivity
+    activity?.let {
+      biometricAuthorizationManager = BiometricAuthorizationManager(context, it)
+    }
   }
 
   /**
@@ -94,6 +103,8 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
    * Clears the stored activity reference.
    */
   override fun onDetachedFromActivity() {
+    biometricAuthorizationManager?.stopAuth()
+    biometricAuthorizationManager = null
     activity = null
   }
 
@@ -113,8 +124,10 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
       return
     }
 
-    // Create a manager instance to handle the biometric operations
-    val biometricAuthorizationManager = BiometricAuthorizationManager(context, currentActivity)
+    val biometricAuthorizationManager =
+      biometricAuthorizationManager ?: BiometricAuthorizationManager(context, currentActivity).also {
+        this.biometricAuthorizationManager = it
+      }
 
     // Route the method call to the appropriate handler
     when (call.method) {
@@ -137,6 +150,9 @@ class BiometricAuthorizationPlugin : FlutterPlugin, MethodCallHandler, ActivityA
       "authenticate" -> {
         // Initiate the biometric authentication process
         biometricAuthorizationManager.authenticate(call, result)
+      }
+      "stopAuth" -> {
+        result.success(biometricAuthorizationManager.stopAuth())
       }
       else -> {
         // Method not implemented

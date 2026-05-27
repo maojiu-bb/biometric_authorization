@@ -18,6 +18,9 @@ enum BiometricType: String {
  * Provides methods to check availability, enrollment, and perform authentication.
  */
 class BiometricAuthorization {
+    private static var currentContext: LAContext?
+    private static var currentResult: FlutterResult?
+    private static weak var currentAuthController: UIViewController?
     
     /**
      * Creates and configures a new LAContext instance.
@@ -92,6 +95,9 @@ class BiometricAuthorization {
      */
     static func authenticate(call: FlutterMethodCall, result: @escaping FlutterResult) {
         let context = createContext()
+        currentContext?.invalidate()
+        currentContext = context
+        currentResult = result
         
         // Extract parameters from the method call
         guard let args = call.arguments as? [String: Any],
@@ -99,6 +105,7 @@ class BiometricAuthorization {
               let reason = args["reason"] as? String
         else {
             result(false)
+            clearAuthenticationState(context: context)
             return
         }
         let title = args["title"] as? String
@@ -131,6 +138,28 @@ class BiometricAuthorization {
                 )
             }
         }
+    }
+
+    /**
+     * Cancels any active biometric authentication flow.
+     *
+     * @return true if an active context or custom UI was stopped.
+     */
+    static func stopAuth() -> Bool {
+        let hadActiveAuth = currentContext != nil || currentResult != nil || currentAuthController != nil
+        currentContext?.invalidate()
+        currentContext = nil
+
+        DispatchQueue.main.async {
+            currentAuthController?.dismiss(animated: true)
+            currentAuthController = nil
+            if let result = currentResult {
+                currentResult = nil
+                result(false)
+            }
+        }
+
+        return hadActiveAuth
     }
     
     /**
@@ -209,7 +238,9 @@ class BiometricAuthorization {
             reason: reason,
             buttonText: confirmText ?? "Authenticate",
             biometricType: biometricType,
-            onAuthenticate: result
+            onAuthenticate: { success in
+                completeAuthentication(success, context: context, fallbackResult: result)
+            }
         )
         
         let hostingController = UIHostingController(rootView: contentView)
@@ -251,6 +282,7 @@ class BiometricAuthorization {
         
         // Present the authentication sheet
         rootViewController.present(hostingController, animated: true)
+        currentAuthController = hostingController
     }
     
     /**
@@ -303,13 +335,28 @@ class BiometricAuthorization {
     ) {
         context.evaluatePolicy(policy, localizedReason: reason) { success, error in
             Task {
-                if success {
-                    result(true)
-                } else {
-                    result(false)
-                }
+                completeAuthentication(success, context: context, fallbackResult: result)
             }
         }
     }
-}
 
+    private static func completeAuthentication(
+        _ success: Bool,
+        context: LAContext,
+        fallbackResult: @escaping FlutterResult
+    ) {
+        DispatchQueue.main.async {
+            guard currentContext === context, let result = currentResult else { return }
+            clearAuthenticationState(context: context)
+            result(success)
+        }
+    }
+
+    private static func clearAuthenticationState(context: LAContext) {
+        if currentContext === context {
+            currentContext = nil
+            currentResult = nil
+            currentAuthController = nil
+        }
+    }
+}

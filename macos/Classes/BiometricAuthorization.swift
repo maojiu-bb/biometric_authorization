@@ -19,6 +19,8 @@ enum BiometricType: String {
  * Supports Touch ID on compatible Mac hardware.
  */
 class BiometricAuthorization {
+    private static var currentContext: LAContext?
+    private static var currentResult: FlutterResult?
     
     // Store the authentication window to manage its lifecycle
     private static var authWindow: NSWindow?
@@ -102,6 +104,9 @@ class BiometricAuthorization {
      */
     static func authenticate(call: FlutterMethodCall, result: @escaping FlutterResult) {
         let context = createContext()
+        currentContext?.invalidate()
+        currentContext = context
+        currentResult = result
         
         // Extract parameters from the method call
         guard let args = call.arguments as? [String: Any],
@@ -109,6 +114,7 @@ class BiometricAuthorization {
               let reason = args["reason"] as? String
         else {
             result(false)
+            clearAuthenticationState(context: context)
             return
         }
         
@@ -150,6 +156,27 @@ class BiometricAuthorization {
                 result: result
             )
         }
+    }
+
+    /**
+     * Cancels any active biometric authentication flow.
+     *
+     * @return true if an active context or custom UI was stopped.
+     */
+    static func stopAuth() -> Bool {
+        let hadActiveAuth = currentContext != nil || currentResult != nil || authWindow != nil
+        currentContext?.invalidate()
+        currentContext = nil
+        closeAuthWindow()
+
+        if let result = currentResult {
+            currentResult = nil
+            DispatchQueue.main.async {
+                result(false)
+            }
+        }
+
+        return hadActiveAuth
     }
     
     /**
@@ -219,7 +246,7 @@ class BiometricAuthorization {
             buttonText: confirmText ?? "Authenticate",
             biometricType: biometricType,
             onAuthenticate: { success in
-                result(success)
+                completeAuthentication(success, context: context, fallbackResult: result)
                 // Close the window after authentication
                 closeAuthWindow()
             }
@@ -247,7 +274,7 @@ class BiometricAuthorization {
         
         // Create and store the window delegate with a strong reference
         let delegate = WindowDelegate(onClose: {
-            result(false)
+            completeAuthentication(false, context: context, fallbackResult: result)
             closeAuthWindow()
         })
         windowDelegate = delegate
@@ -306,12 +333,27 @@ class BiometricAuthorization {
     ) {
         context.evaluatePolicy(policy, localizedReason: reason) { success, error in
             DispatchQueue.main.async {
-                if success {
-                    result(true)
-                } else {
-                    result(false)
-                }
+                completeAuthentication(success, context: context, fallbackResult: result)
             }
+        }
+    }
+
+    private static func completeAuthentication(
+        _ success: Bool,
+        context: LAContext,
+        fallbackResult: @escaping FlutterResult
+    ) {
+        DispatchQueue.main.async {
+            guard currentContext === context, let result = currentResult else { return }
+            clearAuthenticationState(context: context)
+            result(success)
+        }
+    }
+
+    private static func clearAuthenticationState(context: LAContext) {
+        if currentContext === context {
+            currentContext = nil
+            currentResult = nil
         }
     }
 }

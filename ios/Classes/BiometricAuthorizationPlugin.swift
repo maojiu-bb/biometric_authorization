@@ -49,6 +49,10 @@ public class BiometricAuthorizationPlugin: NSObject, FlutterPlugin {
         case "authenticate":
             // Performs biometric authentication with parameters from Flutter
             BiometricAuthorization.authenticate(call: call, result: result)
+
+        case "stopAuth":
+            // Cancels any authentication flow currently in progress
+            result(BiometricAuthorization.stopAuth())
             
         default:
             // Returns not implemented for unknown methods

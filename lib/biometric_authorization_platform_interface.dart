@@ -60,4 +60,9 @@ abstract class BiometricAuthorizationPlatform extends PlatformInterface {
   }) async {
     throw UnimplementedError('authenticate() has not been implemented.');
   }
+
+  /// Stops any biometric authentication currently in progress.
+  Future<bool> stopAuth() async {
+    throw UnimplementedError('stopAuth() has not been implemented.');
+  }
 }
