@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+### ✨ New Features
+
+- **stopAuth() method**: Added ability to cancel any in-progress biometric authentication
+  - Android: Cancels BiometricPrompt, CancellationSignal, FingerprintDialogFragment, and BiometricAuthBottomSheet
+  - iOS: Invalidates LAContext, dismisses custom UI, and completes pending Flutter result
+  - macOS: Invalidates LAContext, closes auth window, and completes pending Flutter result
+  - Automatic cleanup on Activity lifecycle events (Android)
+
 ## 1.1.1
 
 - Lowered the minimum Flutter version to 3.10.0 and Dart version to 3.0.0
